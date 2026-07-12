@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>搜課・課程評價</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <div class="header-logo">
+        <img src="logo.png" alt="搜課" class="logo-img">
+      </div>
+      <div class="header-title">課程評價</div>
+      <div class="header-subtitle">留下你對課程的真實評價</div>
+      <a href="/search.html" class="header-nav-btn">🔍 查評價・找課程</a>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-item" id="stat-total-item" onclick="showPlatformList()" style="cursor:pointer">
+        <div class="stat-value" id="stat-total">--</div>
+        <div class="stat-label">知識庫課程 ▶</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item" id="stat-rated-item" onclick="showRatedList()" style="cursor:pointer">
+        <div class="stat-value" id="stat-rated">--</div>
+        <div class="stat-label">你已評價 ▶</div>
+      </div>
+    </div>
+
+    <!-- ═══ 平台列表彈窗 ═══ -->
+    <div id="platform-modal-overlay" class="modal-overlay" style="display:none" onclick="closePlatformList()">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span class="modal-title">📚 已收錄課程平台</span>
+          <span class="modal-close" onclick="closePlatformList()">&times;</span>
+        </div>
+        <div id="platform-list-body" class="modal-body">
+          <div class="modal-empty">載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 評價歷史彈窗 ═══ -->
+    <div id="rated-modal-overlay" class="modal-overlay" style="display:none" onclick="closeRatedList()">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span class="modal-title">📝 我的評價記錄</span>
+          <span class="modal-close" onclick="closeRatedList()">&times;</span>
+        </div>
+        <div id="rated-list-body" class="modal-body">
+          <div class="modal-empty">載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">貼上課程網址</div>
+      <div class="section-desc">貼上你想評價的課程網址，系統會自動辨識課程資訊</div>
+      <div class="url-input-group">
+        <input type="url" id="course-url" class="url-input" placeholder="https://..." autocomplete="off" spellcheck="false">
+        <button id="check-btn" class="btn btn-primary" onclick="checkUrl()">🔍 查詢</button>
+      </div>
+      <div id="url-error" class="error-msg"></div>
+    </div>
+
+    <div id="loading" class="loading-container" style="display:none">
+      <div class="spinner"></div>
+      <div id="loading-text" class="loading-text">處理中...</div>
+    </div>
+
+    <div id="course-card" class="course-card" style="display:none">
+      <div class="course-card-header">
+        <div class="course-platform" id="course-platform"></div>
+        <div class="course-status" id="course-status"></div>
+      </div>
+      <div class="course-title" id="course-title"></div>
+      <div class="course-meta">
+        <div class="course-meta-item"><span class="meta-label">講師</span><span class="meta-value" id="course-instructor">--</span></div>
+        <div class="course-meta-item"><span class="meta-label">價格</span><span class="meta-value" id="course-price">--</span></div>
+      </div>
+      <div class="course-desc" id="course-desc"></div>
+    </div>
+
+    <!-- ═══ 課程標籤區 ═══ -->
+    <div id="tags-section" class="section" style="display:none">
+      <div class="section-title">課程標籤</div>
+      <div id="tags-container">
+        <div class="tags-prompt" id="tags-prompt" style="display:none">這些是系統自動產生的標籤，請確認是否正確：</div>
+        <div id="tags-list" class="tags-list"></div>
+        <div id="tags-editing" style="display:none">
+          <div class="tag-input-row">
+            <input type="text" id="tag-input" class="url-input" placeholder="輸入新標籤按 Enter..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag()}">
+            <button class="btn btn-sm" onclick="addTag()">＋</button>
+          </div>
+        </div>
+        <div id="tags-actions" class="tags-actions" style="display:none">
+          <button id="tags-confirm-btn" class="btn btn-primary" onclick="confirmTags()" style="font-size:14px;padding:8px 20px">✅ 標籤正確</button>
+          <button id="tags-edit-btn" class="btn btn-sm" onclick="toggleEditTags()" style="margin-left:8px">✏️ 編輯</button>
+        </div>
+        <div id="tags-confirmed-msg" class="tags-confirmed-msg" style="display:none">✅ 標籤已確認</div>
+      </div>
+    </div>
+
+    <div id="already-rated" class="notice notice-info" style="display:none">ℹ️ 你已評價過這門課程了</div>
+
+    <div id="rating-section" class="section" style="display:none">
+      <div class="section-title">選擇評價等級</div>
+      <div class="rating-buttons">
+        <button class="rating-btn rating-great" onclick="selectRating('收獲很大', -10)">
+          <span class="rating-emoji">🎉</span><span class="rating-label">收獲很大</span>
+        </button>
+        <button class="rating-btn rating-ok" onclick="selectRating('不雷', -5)">
+          <span class="rating-emoji">✅</span><span class="rating-label">不雷</span>
+        </button>
+        <button class="rating-btn rating-warn" onclick="selectRating('有點雷', 5)">
+          <span class="rating-emoji">⚠️</span><span class="rating-label">有點雷</span>
+        </button>
+        <button class="rating-btn rating-bad" onclick="selectRating('爆雷', 10)">
+          <span class="rating-emoji">💥</span><span class="rating-label">爆雷</span>
+        </button>
+      </div>
+      <div class="review-input-group" style="margin-top:12px">
+        <textarea id="review-text" class="review-input" placeholder="寫下你的評價（選填）..." rows="3"></textarea>
+      </div>
+      <button id="submit-rating-btn" class="btn btn-submit" onclick="submitRating()" disabled>送出評價</button>
+    </div>
+
+    <!-- ═══ 非好友：加入好友 / Email ═══ -->
+    <div id="non-friend-panel" class="section" style="display:none">
+      <div class="warning-card">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-title">尚未加入搜課</div>
+        <div class="warning-desc">評價儲存後無法累計參與後續活動</div>
+        <div class="warning-desc" style="margin-top:4px">您可以選擇：</div>
+      </div>
+      <button class="btn btn-join" onclick="showVerifyCodePanel()">
+        <span style="font-size:20px">💚</span> 加入好友後自動儲存
+      </button>
+      <button class="btn btn-email-option" onclick="showEmailOption()" style="display:none">
+        <span style="font-size:20px">📧</span> 不加入，使用 Email 儲存
+      </button>
+    </div>
+
+    <!-- ═══ 驗證碼面板 ═══ -->
+    <div id="verify-code-area" class="section" style="display:none">
+      <div class="verify-card">
+        <div class="verify-title">📱 驗證步驟</div>
+        <div class="verify-step">1️⃣ 點下方按鈕開啟 LINE</div>
+        <div class="verify-step">2️⃣ 驗證碼已自動填入，按「傳送」即可</div>
+        <div style="text-align:center;margin:16px 0">
+          <div class="verify-code" id="verify-code">------</div>
+        </div>
+        <a id="verify-line-link" href="https://line.me/R/ti/p/@868lgvsq" target="_blank" class="btn btn-join" style="text-decoration:none">
+          💚 開啟 LINE 送出驗證碼
+        </a>
+        <div class="verify-qr-section" style="text-align:center;margin-top:16px;display:none" id="verify-qr-section">
+          <div style="font-size:12px;color:#888;margin-bottom:6px">或用手機掃 QR Code</div>
+          <img id="verify-qr-img" src="" style="width:160px;height:160px;border-radius:8px;border:1px solid #ddd">
+        </div>
+        <div id="verify-status" class="verify-status pending">等待 LINE 驗證中...</div>
+      </div>
+    </div>
+
+    <!-- ═══ Email 輸入 ═══ -->
+    <div id="email-input-group" class="section" style="display:none">
+      <div class="section-title">📧 輸入 Email</div>
+      <div class="section-desc">請輸入你的 Email，我們會以此信箱記錄你的評價</div>
+      <input type="email" id="email-input" class="url-input" placeholder="your@email.com" style="width:100%">
+      <button id="email-submit-btn" class="btn btn-submit" onclick="submitEmailRating()">使用 Email 送出</button>
+    </div>
+
+    <!-- ═══ 評價結果 ═══ -->
+    <div id="rating-result" class="section" style="display:none">
+      <div class="rating-result-box"></div>
+    </div>
+  </div>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>

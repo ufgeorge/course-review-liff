@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>搜課・課程搜尋</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* ─── 搜尋頁面專用樣式 ─────────────────── */
+.tab-bar {
+  display: flex;
+  border-bottom: 1.5px solid #e0e0e0;
+  background: #fff;
+}
+.tab-btn {
+  flex: 1;
+  padding: 14px 8px;
+  border: none;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: #999;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.tab-btn.active {
+  color: #00b4a5;
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1.5px;
+  left: 15%;
+  right: 15%;
+  height: 3px;
+  background: #00b4a5;
+  border-radius: 3px 3px 0 0;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ─── 課程結果卡片 ──────────────────── */
+.search-result-card {
+  margin: 0 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid #eee;
+}
+.search-result-card .course-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #003c78;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.search-result-card .platform-badge {
+  font-size: 12px;
+  color: #00b4a5;
+  font-weight: 600;
+  background: rgba(0, 180, 165, 0.08);
+  padding: 2px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.search-result-card .rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.rating-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+/* ─── 彙總評分顯示 ──────────────────── */
+.card-rating-info {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.card-star-display {
+  font-size: 18px;
+  font-weight: 700;
+  color: #003c78;
+  margin-bottom: 2px;
+}
+.card-star-display.no-star {
+  font-size: 13px;
+  font-weight: 400;
+  color: #999;
+}
+.card-score-display {
+  font-size: 12px;
+  color: #888;
+}
+.rating-count-badge:active { opacity: 0.7; }
+.rating-count-badge.has-ratings {
+  background: #e8f8e8;
+  color: #1a7a1a;
+}
+.rating-count-badge.no-ratings {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* ─── 匿名評價列表 ──────────────────── */
+.reviews-section { margin-top: 12px; }
+.reviews-toggle {
+  font-size: 13px;
+  color: #00b4a5;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  user-select: none;
+}
+.reviews-toggle:hover { opacity: 0.8; }
+.reviews-list {
+  display: none;
+  margin-top: 8px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 8px;
+}
+.reviews-list.open { display: block; }
+.review-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.review-item:last-child { border-bottom: none; }
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.review-author {
+  font-size: 12px;
+  color: #888;
+  font-weight: 500;
+}
+.review-score {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+.review-score.great { background: rgba(0,180,165,0.1); color: #00b4a5; }
+.review-score.ok { background: rgba(74,144,217,0.1); color: #4a90d9; }
+.review-score.warn { background: rgba(245,166,35,0.1); color: #f5a623; }
+.review-score.bad { background: rgba(231,76,60,0.1); color: #e74c3c; }
+.review-text {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+}
+.review-no-text {
+  font-size: 12px;
+  color: #bbb;
+  font-style: italic;
+}
+.review-date {
+  font-size: 11px;
+  color: #bbb;
+  margin-top: 2px;
+}
+
+/* ─── 熱門標籤 ──────────────────────── */
+.tags-section { padding: 12px 20px; }
+.tags-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #003c78;
+  margin-bottom: 10px;
+}
+.tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  background: #f0faf8;
+  border: 1px solid #d0ece8;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #003c78;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tag-chip:active {
+  background: #00b4a5;
+  color: #fff;
+  border-color: #00b4a5;
+}
+
+/* ─── LINE OA 連結提示 ───────────────── */
+.line-oa-hint {
+  margin: 16px 20px;
+  padding: 14px 16px;
+  background: #e8f4fd;
+  border-radius: 10px;
+  border: 1px solid #b8dff5;
+  text-align: center;
+}
+.line-oa-hint p {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.line-oa-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: #00b4a5;
+  color: #fff;
+  border-radius: 25px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+.line-oa-link:active { opacity: 0.8; }
+
+/* ─── 回到評價頁 ──────────────────── */
+.nav-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 20px 16px;
+}
+.nav-link {
+  font-size: 13px;
+  color: #888;
+  text-decoration: none;
+}
+.nav-link:hover { color: #00b4a5; }
+</style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <div class="header-logo">
+        <img src="logo.png" alt="搜課" class="logo-img">
+      </div>
+      <div class="header-title">課程搜尋</div>
+      <div class="header-subtitle">查課程評價・找興趣課程</div>
+      <a href="/" class="header-nav-btn">📝 寫課程評價</a>
+    </div>
+
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value" id="stat-total-courses">--</div>
+        <div class="stat-label">知識庫課程</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value" id="stat-total-ratings">--</div>
+        <div class="stat-label">累計評價</div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('url-tab')">🔗 貼網址查評價</button>
+      <button class="tab-btn" onclick="switchTab('search-tab')">🔍 搜課程</button>
+    </div>
+
+    <!-- ═══ Tab 1: URL Search ═══ -->
+    <div id="url-tab" class="tab-content active">
+      <div class="section">
+        <div class="section-desc">貼上課程網址，查看課程名稱與所有匿名評價</div>
+        <div class="url-input-group">
+          <input type="url" id="search-url" class="url-input" placeholder="https://..." autocomplete="off" spellcheck="false">
+          <button id="search-url-btn" class="btn btn-primary" onclick="searchByUrl()">🔍 查詢</button>
+        </div>
+        <div id="url-search-error" class="error-msg"></div>
+      </div>
+
+      <div id="url-loading" class="loading-container" style="display:none">
+        <div class="spinner"></div>
+        <div class="loading-text">查詢中...</div>
+      </div>
+
+      <div id="url-result-area" style="display:none">
+        <div class="search-result-card" id="url-result-card">
+          <div class="platform-badge" id="result-platform"></div>
+          <div class="course-name" id="result-title"></div>
+          <div class="card-rating-info">
+            <div class="card-star-display" id="result-star-display"></div>
+            <div class="card-score-display" id="result-score-display"></div>
+          </div>
+          <div class="rating-summary">
+            <div class="rating-count-badge" id="result-rating-badge" onclick="toggleReviews()">
+              <span id="result-rating-text"></span>
+            </div>
+          </div>
+          <div class="reviews-section">
+            <div class="reviews-toggle" id="reviews-toggle" onclick="toggleReviews()">
+              <span id="reviews-toggle-icon">▶</span>
+              <span id="reviews-toggle-label">展開所有評價</span>
+            </div>
+            <div class="reviews-list" id="reviews-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Tab 2: Text Search ═══ -->
+    <div id="search-tab" class="tab-content">
+      <div class="section">
+        <div class="section-desc">輸入感興趣的主題，前往 LINE 官方帳號瀏覽完整課程卡片</div>
+        <div class="url-input-group">
+          <input type="text" id="search-text" class="url-input" placeholder="例如：Python、吉他、英文..." autocomplete="off">
+          <button id="search-text-btn" class="btn btn-primary" onclick="searchOnLineOA()">🔍 搜尋</button>
+        </div>
+      </div>
+
+      <div class="tags-section" id="tags-section">
+        <div class="tags-title">🔥 熱門興趣標籤</div>
+        <div class="tags-cloud" id="tags-cloud">
+          <span class="loading-text" style="color:#999">載入中...</span>
+        </div>
+      </div>
+
+      <div class="line-oa-hint">
+        <p>💡 點擊標籤或輸入關鍵字後，會自動前往 LINE 官方帳號查看完整課程卡片推薦</p>
+        <a id="line-oa-result-link" href="https://line.me/R/ti/p/@868lgvsq" target="_blank" class="line-oa-link" onclick="return openLineOAWithSearch()">
+          💚 前往 LINE 搜課程
+        </a>
+      </div>
+
+      <!-- ═══ 桌面版 QR Code（跟評價頁一樣）═══ -->
+      <div id="search-qr-section" class="section" style="display:none">
+        <div style="text-align:center">
+          <div style="font-size:14px;font-weight:600;color:#003c78;margin-bottom:6px">📱 用手機掃 QR Code 開啟 LINE</div>
+          <div id="search-qr-query-label" style="font-size:12px;color:#888;margin-bottom:10px"></div>
+          <img id="search-qr-img" src="" style="width:180px;height:180px;border-radius:10px;border:1px solid #ddd;background:#fff;padding:8px">
+          <div style="margin-top:10px">
+            <a id="search-qr-line-link" href="https://line.me/R/ti/p/@868lgvsq" target="_blank" class="line-oa-link" style="font-size:13px;padding:10px 18px">
+              💚 直接開啟 LINE
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API_BASE = 'https://line-bot.eletang.com.tw';
+const OA_BASIC_ID = '@868lgvsq';
+const OA_OA_MESSAGE_URL = `https://line.me/R/oaMessage/${OA_BASIC_ID}/`;
+
+function $(id) { return document.getElementById(id); }
+function show(id) { $(id).style.display = ''; }
+function hide(id) { $(id).style.display = 'none'; }
+function showBlock(id) { $(id).style.display = 'block'; }
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function hideError(el) {
+  el.classList.remove('show');
+}
+
+async function apiPost(path, body) {
+  const r = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ detail: `HTTP ${r.status}` }));
+    throw new Error(err.detail || `HTTP ${r.status}`);
+  }
+  return r.json();
+}
+
+/* ─── Tab Switching ──────────────────── */
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const btnIdx = tabId === 'url-tab' ? 0 : 1;
+  document.querySelectorAll('.tab-btn')[btnIdx].classList.add('active');
+  $(tabId).classList.add('active');
+}
+
+/* ─── Initialize ─────────────────────── */
+async function initPage() {
+  try {
+    const d = await apiPost('/api/liff/search-stats');
+    $('stat-total-courses').textContent = d.total_courses.toLocaleString();
+    $('stat-total-ratings').textContent = d.total_ratings.toLocaleString();
+  } catch (e) {
+    $('stat-total-courses').textContent = '?';
+    $('stat-total-ratings').textContent = '?';
+  }
+  loadTags();
+}
+
+/* ─── Tags ────────────────────────────── */
+async function loadTags() {
+  try {
+    const d = await apiPost('/api/liff/search-course/tags');
+    const cloud = $('tags-cloud');
+    if (!d.tags || d.tags.length === 0) {
+      cloud.innerHTML = '<span style="color:#999;font-size:13px">暫無標籤資料</span>';
+      return;
+    }
+    cloud.innerHTML = d.tags.map(t =>
+      `<span class="tag-chip" onclick="tagClick('${escapeHtml(t.tag)}')">${escapeHtml(t.tag)}</span>`
+    ).join('');
+  } catch (e) {
+    $('tags-cloud').innerHTML = '<span style="color:#999;font-size:13px">載入失敗</span>';
+  }
+}
+
+function tagClick(tag) {
+  // 填入搜尋框並直接跳 LINE OA
+  $('search-text').value = tag;
+  navigateToLineOA(tag);
+}
+
+/* ─── 前往 LINE OA（跟評價頁相同方式）─── */
+function navigateToLineOA(query) {
+  const msg = `我想找 ${query} 的課程`;
+  const url = OA_OA_MESSAGE_URL + encodeURIComponent(msg);
+
+  // 跟 app.js 一樣：建立隱藏 <a> 動態設 href，讓瀏覽器處理跳轉
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => document.body.removeChild(link), 100);
+
+  // 跟評價頁一樣：桌面版顯示 QR Code
+  const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const qrSection = $('search-qr-section');
+  if (isMobile) {
+    qrSection.style.display = 'none';
+  } else {
+    $('search-qr-query-label').textContent = `🔍 ${query}`;
+    $('search-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    $('search-qr-line-link').href = url;
+    qrSection.style.display = '';
+    qrSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+/* ─── Search on LINE OA ──────────────── */
+function searchOnLineOA() {
+  const query = $('search-text').value.trim();
+  if (!query) {
+    alert('請輸入想搜尋的關鍵字');
+    return false;
+  }
+  navigateToLineOA(query);
+}
+
+/* ─── 底部按鈕：帶關鍵字前往 LINE OA ─── */
+function openLineOAWithSearch() {
+  const query = $('search-text').value.trim();
+  if (query) {
+    navigateToLineOA(query);
+    return false; // 阻止 href 跳轉
+  }
+  // 無關鍵字：保留 href 到加好友頁
+  return true;
+}
+
+/* ─── URL Search ─────────────────────── */
+async function searchByUrl() {
+  hideError($('url-search-error'));
+  hide('url-result-area');
+  const url = $('search-url').value.trim();
+  if (!url) { showError($('url-search-error'), '請輸入課程網址'); return; }
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    showError($('url-search-error'), '網址需以 http:// 或 https:// 開頭');
+    return;
+  }
+
+  show('url-loading');
+  $('search-url-btn').disabled = true;
+
+  try {
+    const d = await apiPost('/api/liff/search-course/url-info', { url });
+    hide('url-loading');
+
+    // 顯示結果卡片
+    show('url-result-area');
+
+    const course = d.course;
+    const rating = d.rating;
+    const reviews = d.reviews || [];
+
+    $('result-platform').textContent = course.platform || '未知平台';
+    $('result-title').textContent = course.title || (rating.course_title || '未知課程');
+
+    // ─── 彙總評分顯示（星級 + 總雷值）───
+    const starEl = $('result-star-display');
+    const scoreEl = $('result-score-display');
+    if (rating.rating_count > 0) {
+      const avg = rating.total_score / rating.rating_count;
+      if (rating.rating_count >= 3) {
+        let star = 5.0 - (avg + 10) / 4;
+        star = Math.max(0, Math.min(5, Math.round(star * 10) / 10));
+        let stars = '⭐'.repeat(Math.floor(star));
+        if (star - Math.floor(star) >= 0.3) stars += '½';
+        starEl.textContent = `${stars} ${star} / 5.0`;
+        starEl.className = 'card-star-display';
+      } else {
+        starEl.textContent = '（尚無足夠評價顯示星級，需至少 3 筆）';
+        starEl.className = 'card-star-display no-star';
+      }
+      scoreEl.textContent = `總雷值 ${rating.total_score} 點`;
+    } else {
+      starEl.textContent = '';
+      starEl.className = 'card-star-display';
+      scoreEl.textContent = '';
+    }
+
+    // 評價次數徽章
+    const badge = $('result-rating-badge');
+    const badgeText = $('result-rating-text');
+    if (rating.rating_count > 0) {
+      badge.className = 'rating-count-badge has-ratings';
+      badgeText.textContent = `📊 ${rating.rating_count} 筆評價`;
+    } else {
+      badge.className = 'rating-count-badge no-ratings';
+      badgeText.textContent = '📭 尚無評價';
+    }
+
+    // 渲染評價列表
+    const reviewList = $('reviews-list');
+    if (reviews.length > 0) {
+      reviewList.innerHTML = reviews.map(r => {
+        let scoreClass = 'ok';
+        let scoreLabel = '不雷';
+        if (r.rating_score <= -8) { scoreClass = 'great'; scoreLabel = '🎉 收獲很大'; }
+        else if (r.rating_score <= -3) { scoreClass = 'ok'; scoreLabel = '✅ 不雷'; }
+        else if (r.rating_score <= 7) { scoreClass = 'warn'; scoreLabel = '⚠️ 有點雷'; }
+        else { scoreClass = 'bad'; scoreLabel = '💥 爆雷'; }
+        const reviewHtml = r.review_text
+          ? `<div class="review-text">${escapeHtml(r.review_text)}</div>`
+          : `<div class="review-no-text">（無文字評價）</div>`;
+        return `<div class="review-item">
+          <div class="review-header">
+            <span class="review-author">${escapeHtml(r.anonymous_id)}</span>
+            <span class="review-score ${scoreClass}">${scoreLabel}</span>
+          </div>
+          ${reviewHtml}
+          <div class="review-date">${r.created_at || ''}</div>
+        </div>`;
+      }).join('');
+      $('reviews-toggle-icon').textContent = '▶';
+      $('reviews-toggle-label').textContent = `展開所有評價（${reviews.length} 筆）`;
+      reviewList.classList.remove('open');
+      $('reviews-toggle').style.display = '';
+    } else {
+      reviewList.innerHTML = '<div style="padding:12px 0;color:#999;font-size:13px">尚無評價資料</div>';
+      $('reviews-toggle').style.display = 'none';
+    }
+
+    $('url-result-area').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  } catch (e) {
+    hide('url-loading');
+    showError($('url-search-error'), e.message || '查詢課程時發生錯誤');
+  }
+  $('search-url-btn').disabled = false;
+}
+
+/* ─── Toggle Reviews ──────────────────── */
+let reviewsOpen = false;
+function toggleReviews() {
+  const list = $('reviews-list');
+  const icon = $('reviews-toggle-icon');
+  const label = $('reviews-toggle-label');
+  reviewsOpen = !reviewsOpen;
+  if (reviewsOpen) {
+    list.classList.add('open');
+    icon.textContent = '▼';
+    const count = list.querySelectorAll('.review-item').length;
+    label.textContent = `收起評價（${count} 筆）`;
+  } else {
+    list.classList.remove('open');
+    icon.textContent = '▶';
+    const count = list.querySelectorAll('.review-item').length;
+    label.textContent = `展開所有評價（${count} 筆）`;
+  }
+}
+
+/* ─── Enter Key ──────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  $('search-url').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); searchByUrl(); }
+  });
+  $('search-text').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); searchOnLineOA(); }
+  });
+  initPage();
+});
+</script>
+</body>
+</html>

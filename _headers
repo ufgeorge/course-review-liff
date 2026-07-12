@@ -1,0 +1,3 @@
+/*
+  Content-Security-Policy: default-src 'self' https://static.line-scdn.net https://*.line.me https://line-bot.eletang.com.tw; script-src 'self' https://static.line-scdn.net https://*.line.me 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://api.qrserver.com; connect-src 'self' https://line-bot.eletang.com.tw https://*.line.me
+  Access-Control-Allow-Origin: *
