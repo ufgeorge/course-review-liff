@@ -86,11 +86,14 @@ async function handleContinueToken(token) {
         hide('loading');
         showBlock('rating-result');
         $('rating-result').style.display = 'block';
-        $('rating-result').innerHTML = `
-          <div style="font-size:18px;margin-bottom:8px">✅ 評價已完成！</div>
-          <div style="margin-top:8px;border-top:1px solid #ccc;padding-top:8px;font-size:13px;color:#888">
+        let html = `<div style="font-size:18px;margin-bottom:8px">✅ 評價已完成！</div>`;
+        if (d.points_earned) {
+          html += `<div style="margin-top:6px;font-size:14px;color:#f59e0b">🎯 +${d.points_earned} 點數獲得！（累計 ${d.total_points} 點）</div>`;
+        }
+        html += `<div style="margin-top:8px;border-top:1px solid #ccc;padding-top:8px;font-size:13px;color:#888">
             📊 目前累計 <strong>${d.rating_count}</strong> 次評價，總評分 <strong>${d.total_score}</strong> 點
           </div>`;
+        $('rating-result').innerHTML = html;
         clearUrlInput();
         loadStats();
         window.history.replaceState({}, '', '/');
@@ -139,9 +142,11 @@ async function loadStats() {
     const d = await apiPost('/api/liff/user-stats', { user_id: userId });
     $('stat-total').textContent = d.total_courses.toLocaleString();
     $('stat-rated').textContent = d.user_rated_count.toLocaleString();
+    $('stat-points').textContent = d.user_points != null ? d.user_points.toLocaleString() : '0';
   } catch (e) {
     $('stat-total').textContent = '?';
     $('stat-rated').textContent = '?';
+    $('stat-points').textContent = '?';
   }
 }
 
@@ -186,6 +191,48 @@ async function showRatedList() {
 
 function closeRatedList() {
   $('rated-modal-overlay').style.display = 'none';
+}
+
+/* ─── 點數彈窗 ──────────────────────────── */
+async function showPointList() {
+  if (!userId) {
+    showError('請先完成一次評價後再查看點數');
+    return;
+  }
+  const overlay = $('points-modal-overlay');
+  const body = $('points-list-body');
+  body.innerHTML = '<div class="modal-empty">載入中...</div>';
+  overlay.style.display = 'flex';
+  try {
+    const d = await apiPost('/api/liff/user-points', { user_id: userId });
+    const total = d.total_points || 0;
+    let html = `<div style="text-align:center;padding:16px 0">
+      <div style="font-size:42px;margin-bottom:4px">🎯</div>
+      <div style="font-size:28px;font-weight:700;color:#1a3a5c">${total.toLocaleString()}</div>
+      <div style="font-size:13px;color:#888;margin-top:2px">累計點數</div>
+    </div>`;
+    if (!d.transactions || d.transactions.length === 0) {
+      html += '<div class="modal-empty">📭 尚無點數交易紀錄<br><span style="font-size:12px;color:#999">去評價課程賺點數吧！</span></div>';
+    } else {
+      html += '<div style="margin-top:8px;border-top:1px solid #eee;padding-top:8px"><div style="font-size:13px;color:#555;margin-bottom:6px">📋 最近交易</div>';
+      html += d.transactions.map(t => {
+        const sign = t.points > 0 ? '+' : '';
+        const color = t.points > 0 ? '#22c55e' : '#ef4444';
+        const reason = t.reason === 'course_review' ? '📝 課程評價' : (t.reason ? '🔙 ' + escapeHtml(t.reason) : '-');
+        return `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5;font-size:13px">
+          <span style="color:#555">${reason}</span>
+          <span style="font-weight:600;color:${color}">${sign}${t.points}</span>
+        </div>`;
+      }).join('');
+      html += '</div>';
+    }
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div class="modal-empty">❌ 載入失敗</div>';
+  }
+}
+function closePointList() {
+  $('points-modal-overlay').style.display = 'none';
 }
 
 /* ─── 查詢課程 ───────────────────────────── */
@@ -476,6 +523,9 @@ function showRatingSuccess(d) {
     <div style="font-size:18px;margin-bottom:8px">✅ 評價完成！</div>
     <div>${emoji} ${selectedRating}</div>
     <div style="margin-top:4px;color:#555">📚 ${escapeHtml(currentCourse?.title || '').slice(0, 40)}</div>`;
+  if (d.points_earned) {
+    html += `<div style="margin-top:6px;font-size:14px;color:#f59e0b">🎯 +${d.points_earned} 點數獲得！（累計 ${d.total_points} 點）</div>`;
+  }
   if (d.total_score !== undefined) {
     html += `<div style="margin-top:8px;border-top:1px solid #ccc;padding-top:8px;font-size:13px;color:#888">
       📊 目前累計 <strong>${d.rating_count}</strong> 次評價，總評分 <strong>${d.total_score}</strong> 點</div>`;
