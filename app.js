@@ -51,9 +51,25 @@ async function apiPost(path, body) {
 
 /* ─── 頁面初始化 ─────────────────────────── */
 async function initPage() {
-  // 嘗試從 localStorage 恢復 userId（已完成驗證的好友）
+  // 嘗試從 LIFF SDK 取得 userId
+  try {
+    if (typeof liff !== 'undefined') {
+      await liff.init({ liffId: '2006684025-pPLBowmb' });
+      if (liff.isLoggedIn()) {
+        const profile = await liff.getProfile();
+        if (profile.userId) {
+          userId = profile.userId;
+          localStorage.setItem('liff_user_id', userId);
+        }
+      }
+    }
+  } catch (e) {
+    // LIFF init 失敗，降級到 localStorage
+  }
+
+  // 嘗試從 localStorage 恢復 userId（已完成驗證的好友或 LIFF fallback）
   const savedId = localStorage.getItem('liff_user_id');
-  if (savedId) {
+  if (savedId && !userId) {
     userId = savedId;
   }
 
