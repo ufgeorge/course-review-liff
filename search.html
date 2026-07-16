@@ -273,6 +273,11 @@
         <div class="stat-value" id="stat-total-ratings">--</div>
         <div class="stat-label">累計評價</div>
       </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item" onclick="showPointList()" style="cursor:pointer">
+        <div class="stat-value" id="stat-points">--</div>
+        <div class="stat-label">我的點數 ▶</div>
+      </div>
     </div>
 
     <div class="tab-bar">
@@ -408,6 +413,9 @@ function switchTab(tabId) {
 
 /* ─── Initialize ─────────────────────── */
 async function initPage() {
+  // 從 localStorage 恢復 userId
+  const savedId = localStorage.getItem('liff_user_id');
+  if (savedId) userId = savedId;
   try {
     const d = await apiPost('/api/liff/search-stats');
     $('stat-total-courses').textContent = d.total_courses.toLocaleString();
@@ -415,6 +423,13 @@ async function initPage() {
   } catch (e) {
     $('stat-total-courses').textContent = '?';
     $('stat-total-ratings').textContent = '?';
+  }
+  // 載入個人點數（如果有 userId）
+  if (userId) {
+    try {
+      const p = await apiPost('/api/liff/user-points', { user_id: userId });
+      safeText('stat-points', p.total_points);
+    } catch (e) { /* 忽略點數載入錯誤 */ }
   }
   loadTags();
 }

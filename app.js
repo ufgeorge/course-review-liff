@@ -140,13 +140,22 @@ function closePlatformList() {
 async function loadStats() {
   try {
     const d = await apiPost('/api/liff/user-stats', { user_id: userId });
-    $('stat-total').textContent = d.total_courses.toLocaleString();
-    $('stat-rated').textContent = d.user_rated_count.toLocaleString();
-    $('stat-points').textContent = d.user_points != null ? d.user_points.toLocaleString() : '0';
+    safeText('stat-total', d.total_courses);
+    safeText('stat-rated', d.user_rated_count);
+    safeText('stat-points', d.user_points);
   } catch (e) {
-    $('stat-total').textContent = '?';
-    $('stat-rated').textContent = '?';
-    $('stat-points').textContent = '?';
+    safeText('stat-total', '?');
+    safeText('stat-rated', '?');
+    safeText('stat-points', '?');
+  }
+}
+function safeText(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (typeof val === 'number') {
+    el.textContent = val.toLocaleString();
+  } else {
+    el.textContent = val != null ? String(val) : '0';
   }
 }
 
